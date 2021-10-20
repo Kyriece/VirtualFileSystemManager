@@ -1,3 +1,4 @@
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -26,7 +27,7 @@ public class VSFS {
         //Load notes file
         File notesFile = new File(args[notesName]);
         FS = new File(args[notesName]);
-        // Scanner myReader = new Scanner(notesFile);
+        Scanner myReader = new Scanner(notesFile);
         // System.out.println();
         // if (notesFile.exists()) {
         //     while(myReader.hasNextLine()){
@@ -37,13 +38,19 @@ public class VSFS {
         //     throw new IOException();
         // }
 
+        if(notesFile.exists()){
+            if(!myReader.hasNext() || !myReader.nextLine().equals("NOTES V1.0")){
+                System.out.println("Invalid notes file");
+            }
+            else{
+                commandTerminal(args);
+            }
+        }
+        myReader.close();
+
+
         // myReader.close();
         //Input commands
-        try {
-            commandTerminal(args);
-        } catch (IOException e) {
-            System.out.println("Invalid Arguement... Exiting...");
-        }
         // File testFile = new File("filename.txt");
         // try {
         //     System.out.println(Files.getAttribute(testFile.toPath(), "unix:nlink"));
@@ -117,28 +124,34 @@ public class VSFS {
         PrintWriter blah = new PrintWriter(new BufferedWriter(new FileWriter(FS.getPath(), true)));
 
         //Checks existance of all subdirectories
-        Scanner myReader = new Scanner(FS);
         for(String directory : directories){
+
             //Creates possible permuations of subdirectories
             boolean directoryExist = false;
-            directory = "@" + directory + "/";
-            path += directory.replace("@", "");
-            System.out.println("DIRECTORY = " + directory);
-            System.out.println("PATH = " + path);
+            path += directory + "/";
+
             //Checks if possible subdirectory already exist
-            while(myReader.hasNext()){
-                if(myReader.nextLine().equals(fileName)){
+            FileReader reader = new FileReader(FS);
+            BufferedReader bufferedReader = new BufferedReader(reader);
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                if(line.equals("@" + path)){
                     directoryExist = true;
                 }
             }
-            //Creates directory
+            reader.close();
+
+            // Creates directory
             if(!directoryExist){
-                blah.println("@" + path);
+                blah.println();
+                blah.print("@" + path);
             }
         }
-        myReader.close();
-        
         blah.flush();
         blah.close();
+    }
+
+    public void rm(){
+
     }
 }
