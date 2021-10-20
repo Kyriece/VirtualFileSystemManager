@@ -127,28 +127,31 @@ public class VSFS {
         for(String directory : directories){
 
             //Creates possible permuations of subdirectories
-            boolean directoryExist = false;
             path += directory + "/";
 
-            //Checks if possible subdirectory already exist
-            FileReader reader = new FileReader(FS);
-            BufferedReader bufferedReader = new BufferedReader(reader);
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                if(line.equals("@" + path)){
-                    directoryExist = true;
-                }
-            }
-            reader.close();
-
             // Creates directory
-            if(!directoryExist){
+            if(!pathExist("@" + path)){
                 blah.println();
                 blah.print("@" + path);
             }
         }
         blah.flush();
         blah.close();
+    }
+
+    public boolean pathExist(String path) throws IOException{
+        boolean existance = false;
+        FileReader reader = new FileReader(FS);
+        BufferedReader bufferedReader = new BufferedReader(reader);
+        String line;
+        while ((line = bufferedReader.readLine()) != null) {
+            if(line.equals(path)){
+                existance= true;
+            }
+        }
+        reader.close();
+        System.out.println(existance);
+        return existance;
     }
 
     public void rm(){
