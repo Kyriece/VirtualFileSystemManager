@@ -8,12 +8,13 @@ import java.util.Scanner;
 public class Driver {
     public static void main(String[] args)
     {
-        VSFM vfsmFile = new VSFM();
+        VSFS vsfsFile = new VSFS();
         try {
-            vfsmFile.run();
+            vsfsFile.run(args);
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
+        
     }
 }
