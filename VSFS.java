@@ -18,35 +18,40 @@ import java.util.Scanner;
 public class VSFS {
 
     private File FS;
-    final int notesName = 2;
+    final char FILE_SYMBOL = '@';
+    final char FOLDER_SYMBOL = '=';
+    final char DELETED_SYMBOL = '#';
+    final int NOTES_NAME = 2;
     public void VFSM(){
     }
 
     public void run(String[] args) throws IOException{
 
         //Load notes file
-        File notesFile = new File(args[notesName]);
-        FS = new File(args[notesName]);
-        Scanner myReader = new Scanner(notesFile);
-        // System.out.println();
-        // if (notesFile.exists()) {
-        //     while(myReader.hasNextLine()){
-        //         System.out.println(myReader.nextLine());
-        //     }
-        // } else {
-        //     myReader.close();
-        //     throw new IOException();
-        // }
+        FS = new File(args[NOTES_NAME]);
+        // Scanner myReader = new Scanner(notesFile);
 
-        if(notesFile.exists()){
-            if(!myReader.hasNext() || !myReader.nextLine().equals("NOTES V1.0")){
+        FileReader reader = new FileReader(FS);
+        BufferedReader bufferedReader = new BufferedReader(reader);
+        String line;
+        ArrayList<String> FSContent = new ArrayList<>();
+        while ((line = bufferedReader.readLine()) != null) {
+            FSContent.add(line);
+        }
+        bufferedReader.close();
+        System.out.println(FSContent);
+
+        if(FS.exists()){
+            if(!FSContent.get(0).equals("NOTES V1.0")){
                 System.out.println("Invalid notes file");
-            }
+            } 
             else{
                 commandTerminal(args);
             }
         }
-        myReader.close();
+
+        
+        // myReader.close();
 
 
         // myReader.close();
@@ -91,10 +96,10 @@ public class VSFS {
                     break;
                 case ("mkdir"):
                     //Creates file with ID inputted
-                    mkDir(input.get(notesName), input.get(input.size()-1));
+                    mkDir(input.get(input.size()-1));
                     break;
                 case ("rm"):
-
+                    rm(input.get(input.size()-1));
                     break;
                 case ("rmdir"):
 
@@ -117,11 +122,11 @@ public class VSFS {
         return VFSMcommand;
     }
 
-    public void mkDir(String notesName, String fileName) throws IOException {
+    public void mkDir(String directoryName) throws IOException {
 
-        ArrayList<String> directories = new ArrayList<String>(Arrays.asList(fileName.split("/")));
+        ArrayList<String> directories = new ArrayList<String>(Arrays.asList(directoryName.split("/")));
         String path = "";
-        PrintWriter blah = new PrintWriter(new BufferedWriter(new FileWriter(FS.getPath(), true)));
+        PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(FS.getPath(), true)));
 
         //Checks existance of all subdirectories
         for(String directory : directories){
@@ -130,13 +135,13 @@ public class VSFS {
             path += directory + "/";
 
             // Creates directory
-            if(!pathExist("@" + path)){
-                blah.println();
-                blah.print("@" + path);
+            if(!pathExist(FOLDER_SYMBOL+ path)){
+                writer.println();
+                writer.print(FOLDER_SYMBOL+ path);
             }
         }
-        blah.flush();
-        blah.close();
+        writer.flush();
+        writer.close();
     }
 
     public boolean pathExist(String path) throws IOException{
@@ -144,7 +149,8 @@ public class VSFS {
         FileReader reader = new FileReader(FS);
         BufferedReader bufferedReader = new BufferedReader(reader);
         String line;
-        while ((line = bufferedReader.readLine()) != null) {
+        //Reads until it finds matching path
+        while ((line = bufferedReader.readLine()) != null && existance == false) {
             if(line.equals(path)){
                 existance= true;
             }
@@ -154,7 +160,60 @@ public class VSFS {
         return existance;
     }
 
-    public void rm(){
+    public void rm(String filePath) throws IOException{
+        ArrayList<String> tempLines = new ArrayList<>(); 
+        PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(FS.getPath(), true)));
 
+        //Checks if file exist
+        if(pathExist(FILE_SYMBOL + filePath)){
+
+            //Copies all lines excluding matching filedirectory to tempLines AND gets linecount
+            tempLines = createFSCopy();
+            int targetLine = getTargetLineNumber(FILE_SYMBOL + filePath);
+
+            //Empties file
+            new FileWriter(FS, false).close();
+
+            //Writes copy to new file, replacing targetLine with new symbol
+            for(int i = 0; i < tempLines.size(); i++){
+                if(i == targetLine){
+                    writer.println(DELETED_SYMBOL + filePath);
+                }
+                else{
+                    writer.println(tempLines.get(i));
+                }
+            }
+        }
+        writer.flush();
+        writer.close();
+    }
+
+    public ArrayList<String> createFSCopy() throws IOException{
+        ArrayList<String> tempLines = new ArrayList<>(); 
+        FileReader reader = new FileReader(FS);
+        BufferedReader bufferedReader = new BufferedReader(reader);
+        String line;
+            while ((line = bufferedReader.readLine()) != null){
+                tempLines.add(line);
+            }
+        bufferedReader.close();
+        return tempLines;
+    }
+
+    public int getTargetLineNumber(String filePath) throws IOException{
+        FileReader reader = new FileReader(FS);
+        BufferedReader bufferedReader = new BufferedReader(reader);
+        String line;
+        int lineCount = 0;
+        int targetLine = 0;
+
+        while ((line = bufferedReader.readLine()) != null){
+            if(line.equals(filePath)){
+                targetLine = lineCount;
+            }
+            lineCount++;
+        }
+        bufferedReader.close();
+        return targetLine;
     }
 }
