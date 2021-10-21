@@ -128,8 +128,7 @@ public class VSFS {
 
     public void copyIn(String EF, String IF) throws IOException{
         System.out.println("EF = " + EF + " IF = " + IF);
-        if (!pathExist(FILE_SYMBOL + IF)) {
-
+        rm(IF);
             // Creates all necessary subdirectories
             ArrayList<String> IFSplit = new ArrayList<String>(Arrays.asList(IF.split("/")));
             String path = "";
@@ -144,14 +143,15 @@ public class VSFS {
             PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(FS.getPath(), true)));
             BufferedReader bufferedReader = new BufferedReader(reader);
             String line;
+            // Create file in FS
             writer.println(FILE_SYMBOL + IF);
+            // Write content to file
             while ((line = bufferedReader.readLine()) != null) {
                 writer.println(" " + line);
             }
             bufferedReader.close();
             writer.flush();
             writer.close();
-        }
     }
 
     public void mkDir(String directoryName) throws IOException {
@@ -223,7 +223,6 @@ public class VSFS {
     }
 
     public void rmDir(String filePath) throws IOException{
-
         
         //Gets the index of files that are within target filepath
         ArrayList<Integer> targetLines = new ArrayList<>();
