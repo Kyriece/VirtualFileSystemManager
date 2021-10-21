@@ -11,8 +11,9 @@ public class Driver {
         VSFS vsfsFile = new VSFS();
         try {
             vsfsFile.run(args);
-        } catch (IOException e) {
+        } catch (Exception e) {
             // TODO Auto-generated catch block
+            System.out.println("Failed");
             e.printStackTrace();
         }
         

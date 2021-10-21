@@ -80,7 +80,7 @@ public class VSFS {
     }
 
 
-    public void commandTerminal(String[] args) throws IOException{
+    public void commandTerminal(String[] args) throws IOException, FileNotFoundException{
         // Get input
         //Read command
         ArrayList<String> input = new ArrayList<String>(Arrays.asList(args));
@@ -95,7 +95,7 @@ public class VSFS {
                     copyIn(input.get(input.size()-2), input.get(input.size()-1));
                     break;
                 case ("copyout"):
-                    copyIn(input.get(input.size()-2), input.get(input.size()-1));
+                    copyOut(input.get(input.size()-2), input.get(input.size()-1));
                     break;
                 case ("mkdir"):
                     //Creates new directory
@@ -126,7 +126,7 @@ public class VSFS {
         return VFSMcommand;
     }
 
-    public void copyIn(String EF, String IF) throws IOException{
+    public void copyIn(String EF, String IF) throws IOException, FileNotFoundException{
         // System.out.println("EF = " + EF + " IF = " + IF);
         //Deletes file if it already exist
         rm(IF);
@@ -155,14 +155,26 @@ public class VSFS {
         writer.close();
     }
 
-    public void copyOut(String IF, String EF) throws IOException{
+    public void copyOut(String IF, String EF) throws IOException, FileNotFoundException{
+        //Create file
+        new FileWriter(EF, false).close();
+        File newFile = new File(EF);
+        // newFile.createNewFile();
+        PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(newFile.getPath(), true)));
+
+
         //Read contents of IF
-        int targetLine;
-        for(String lines : FSContent){
-
+        ArrayList<Integer> indexOfContent = new ArrayList<>();
+        if(pathExist(FILE_SYMBOL + IF)){
+            indexOfContent = getTargetLineIndex(IF);
+            System.out.println("ENTERING LOOP");
+            for(int i = 1; i < indexOfContent.size(); i++){
+                writer.println(FSContent.get(indexOfContent.get(i)).substring(1));
+            }
+            System.out.println("EXITING LOOP");
         }
-
-        targetLine = getTargetLineIndex(IF).get(0);
+        writer.flush();
+        writer.close();
     }
 
     public void mkDir(String directoryName) throws IOException {
@@ -283,7 +295,6 @@ public class VSFS {
         for(String line : FSContent){
             //Makes sure not to count deleted files
             if(line.contains(filePath) && !line.contains(String.valueOf(DELETED_SYMBOL))){
-                System.out.println("Found matching entry: " + line);
                 targetLines.add(lineCount);
             }
             lineCount++;
@@ -293,21 +304,22 @@ public class VSFS {
         return targetLines;
     }
 
-    public ArrayList<Integer> getFilesLinesIndex(ArrayList<Integer> indexOfDeletedFiles){
-        System.out.println("GetFilesLinesIndex");
-        int deletedFileContent = 0;
-        ArrayList<Integer> deletedContent = new ArrayList<>();
-        for(int deletedIndex : indexOfDeletedFiles){
-            deletedFileContent = deletedIndex;
-            deletedFileContent++;
-            while(deletedFileContent < FSContent.size() && FSContent.get(deletedFileContent).substring(0, 1).equals(" ")){
-                System.out.println(FSContent.get(deletedFileContent));
-                System.out.println("ADDING TO DELETED FILE = " + deletedFileContent);
-                deletedContent.add(deletedFileContent);
-                deletedFileContent++;
+    public ArrayList<Integer> getFilesLinesIndex(ArrayList<Integer> indexOfFiles){
+        // System.out.println("GetFilesLinesIndex");
+        int fileContentIndex = 0;
+        ArrayList<Integer> fileContent = new ArrayList<>();
+        //Checks all deleted index's, and if they're followed by 'filecontent' then it adds them to the list 
+        for(int fileIndex : indexOfFiles){
+            fileContentIndex = fileIndex;
+            fileContentIndex++;
+            while(fileContentIndex < FSContent.size() && FSContent.get(fileContentIndex).substring(0, 1).equals(" ")){
+                System.out.println(FSContent.get(fileContentIndex));
+                // System.out.println("ADDING TO FILE CONTENT = " + fileContentIndex);
+                fileContent.add(fileContentIndex);
+                fileContentIndex++;
             }
         }
-        System.out.println("DELETED FILE CONTENT = " + deletedContent);
-        return deletedContent;
+        // System.out.println("FILE CONTENT = " + fileContent);
+        return fileContent;
     }
 }
