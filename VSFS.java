@@ -95,7 +95,7 @@ public class VSFS {
                     copyIn(input.get(input.size()-2), input.get(input.size()-1));
                     break;
                 case ("copyout"):
-
+                    copyIn(input.get(input.size()-2), input.get(input.size()-1));
                     break;
                 case ("mkdir"):
                     //Creates new directory
@@ -127,31 +127,42 @@ public class VSFS {
     }
 
     public void copyIn(String EF, String IF) throws IOException{
-        System.out.println("EF = " + EF + " IF = " + IF);
+        // System.out.println("EF = " + EF + " IF = " + IF);
+        //Deletes file if it already exist
         rm(IF);
-            // Creates all necessary subdirectories
-            ArrayList<String> IFSplit = new ArrayList<String>(Arrays.asList(IF.split("/")));
-            String path = "";
-            for (int i = 0; i < (IFSplit.size() - 1); i++) {
-                path += IFSplit.get(i) + "/";
-            }
-            mkDir(path);
+        // Creates all necessary subdirectories
+        ArrayList<String> IFSplit = new ArrayList<String>(Arrays.asList(IF.split("/")));
+        String path = "";
+        for (int i = 0; i < (IFSplit.size() - 1); i++) {
+            path += IFSplit.get(i) + "/";
+        }
+        mkDir(path);
 
-            // Read external file
-            File externalFile = new File(EF);
-            FileReader reader = new FileReader(externalFile);
-            PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(FS.getPath(), true)));
-            BufferedReader bufferedReader = new BufferedReader(reader);
-            String line;
-            // Create file in FS
-            writer.println(FILE_SYMBOL + IF);
-            // Write content to file
-            while ((line = bufferedReader.readLine()) != null) {
-                writer.println(" " + line);
-            }
-            bufferedReader.close();
-            writer.flush();
-            writer.close();
+        // Read external file
+        File externalFile = new File(EF);
+        FileReader reader = new FileReader(externalFile);
+        PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(FS.getPath(), true)));
+        BufferedReader bufferedReader = new BufferedReader(reader);
+        String line;
+        // Create file in FS
+        writer.println(FILE_SYMBOL + IF);
+        // Appends content to file
+        while ((line = bufferedReader.readLine()) != null) {
+            writer.println(" " + line);
+        }
+        bufferedReader.close();
+        writer.flush();
+        writer.close();
+    }
+
+    public void copyOut(String IF, String EF) throws IOException{
+        //Read contents of IF
+        int targetLine;
+        for(String lines : FSContent){
+
+        }
+
+        targetLine = getTargetLineIndex(IF).get(0);
     }
 
     public void mkDir(String directoryName) throws IOException {
@@ -187,7 +198,7 @@ public class VSFS {
             }
         }
         reader.close();
-        System.out.println("PATH " + path + " EXISTANCE = " + existance);
+        // System.out.println("PATH " + path + " EXISTANCE = " + existance);
         return existance;
     }
 
@@ -208,7 +219,7 @@ public class VSFS {
             //Writes copy to new file, replacing targetLine with new symbol
             for(int i = 0; i < tempLines.size(); i++){
                 if(targetLine.contains(i)){
-                    writer.println(DELETED_SYMBOL + filePath);
+                    writer.println(DELETED_SYMBOL + tempLines.get(i).substring(1));
                 }
                 else{
                     writer.println(tempLines.get(i));
@@ -269,14 +280,34 @@ public class VSFS {
     public ArrayList<Integer> getTargetLineIndex(String filePath) throws IOException{
         ArrayList<Integer> targetLines = new ArrayList<>();
         int lineCount = 0;
-        for(String file : FSContent){
+        for(String line : FSContent){
             //Makes sure not to count deleted files
-            if(file.contains(filePath) && !file.contains(String.valueOf(DELETED_SYMBOL))){
-                System.out.println("Found matching entry: " + file);
+            if(line.contains(filePath) && !line.contains(String.valueOf(DELETED_SYMBOL))){
+                System.out.println("Found matching entry: " + line);
                 targetLines.add(lineCount);
             }
             lineCount++;
         }
+        targetLines.addAll(getFilesLinesIndex(targetLines));
+        System.out.println(targetLines);
         return targetLines;
+    }
+
+    public ArrayList<Integer> getFilesLinesIndex(ArrayList<Integer> indexOfDeletedFiles){
+        System.out.println("GetFilesLinesIndex");
+        int deletedFileContent = 0;
+        ArrayList<Integer> deletedContent = new ArrayList<>();
+        for(int deletedIndex : indexOfDeletedFiles){
+            deletedFileContent = deletedIndex;
+            deletedFileContent++;
+            while(deletedFileContent < FSContent.size() && FSContent.get(deletedFileContent).substring(0, 1).equals(" ")){
+                System.out.println(FSContent.get(deletedFileContent));
+                System.out.println("ADDING TO DELETED FILE = " + deletedFileContent);
+                deletedContent.add(deletedFileContent);
+                deletedFileContent++;
+            }
+        }
+        System.out.println("DELETED FILE CONTENT = " + deletedContent);
+        return deletedContent;
     }
 }
