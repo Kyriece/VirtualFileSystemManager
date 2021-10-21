@@ -41,6 +41,7 @@ public class VSFS {
         bufferedReader.close();
         System.out.println(FSContent);
 
+
         if(FS.exists()){
             if(!FSContent.get(0).equals("NOTES V1.0")){
                 System.out.println("Invalid notes file");
@@ -80,7 +81,6 @@ public class VSFS {
 
 
     public void commandTerminal(String[] args) throws IOException{
-        // ArrayList<File> fileDirectory = new ArrayList<>();
         // Get input
         //Read command
         ArrayList<String> input = new ArrayList<String>(Arrays.asList(args));
@@ -88,8 +88,11 @@ public class VSFS {
         System.out.println(command);
         if(VFSMcommandCheck(input)){
             switch(command){
-                case ("copyin"):
+                case ("list"):
 
+                    break;
+                case ("copyin"):
+                    copyIn(input.get(input.size()-2), input.get(input.size()-1));
                     break;
                 case ("copyout"):
 
@@ -103,6 +106,7 @@ public class VSFS {
                     rm(input.get(input.size()-1));
                     break;
                 case ("rmdir"):
+                    //Delets directory
                     rmDir(input.get(input.size()-1));
                     break;
                 case ("defrag"):
@@ -122,6 +126,34 @@ public class VSFS {
         return VFSMcommand;
     }
 
+    public void copyIn(String EF, String IF) throws IOException{
+        System.out.println("EF = " + EF + " IF = " + IF);
+        if (!pathExist(FILE_SYMBOL + IF)) {
+
+            // Creates all necessary subdirectories
+            ArrayList<String> IFSplit = new ArrayList<String>(Arrays.asList(IF.split("/")));
+            String path = "";
+            for (int i = 0; i < (IFSplit.size() - 1); i++) {
+                path += IFSplit.get(i) + "/";
+            }
+            mkDir(path);
+
+            // Read external file
+            File externalFile = new File(EF);
+            FileReader reader = new FileReader(externalFile);
+            PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(FS.getPath(), true)));
+            BufferedReader bufferedReader = new BufferedReader(reader);
+            String line;
+            writer.println(FILE_SYMBOL + IF);
+            while ((line = bufferedReader.readLine()) != null) {
+                writer.println(" " + line);
+            }
+            bufferedReader.close();
+            writer.flush();
+            writer.close();
+        }
+    }
+
     public void mkDir(String directoryName) throws IOException {
 
         ArrayList<String> directories = new ArrayList<String>(Arrays.asList(directoryName.split("/")));
@@ -135,9 +167,8 @@ public class VSFS {
             path += directory + "/";
 
             // Creates directory
-            if(!pathExist(FOLDER_SYMBOL+ path)){
-                writer.println();
-                writer.print(FOLDER_SYMBOL+ path);
+            if(!pathExist(FOLDER_SYMBOL + path)){
+                writer.println(FOLDER_SYMBOL+ path);
             }
         }
         writer.flush();
@@ -156,7 +187,7 @@ public class VSFS {
             }
         }
         reader.close();
-        System.out.println(existance);
+        System.out.println("PATH " + path + " EXISTANCE = " + existance);
         return existance;
     }
 
@@ -169,7 +200,7 @@ public class VSFS {
 
             //Copies all lines excluding matching filedirectory to tempLines AND gets linecount
             tempLines = createFSCopy();
-            ArrayList<Integer> targetLine = getTargetLineNumber(FILE_SYMBOL + filePath);
+            ArrayList<Integer> targetLine = getTargetLineIndex(FILE_SYMBOL + filePath);
 
             //Empties file
             new FileWriter(FS, false).close();
@@ -184,6 +215,9 @@ public class VSFS {
                 }
             }
         }
+        else{
+            System.out.println("File does not exist");
+        }
         writer.flush();
         writer.close();
     }
@@ -193,32 +227,31 @@ public class VSFS {
         
         //Gets the index of files that are within target filepath
         ArrayList<Integer> targetLines = new ArrayList<>();
-        int lineCount = 0;
-        for(String file : FSContent){
-            if(file.contains(filePath)){
-                System.out.println("Found matching entry: " + file );
-                targetLines.add(lineCount);
+
+        //Checks if folder exist
+        if(pathExist(FOLDER_SYMBOL + filePath)){
+            targetLines = getTargetLineIndex(filePath);
+            PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(FS.getPath(), true)));
+            ArrayList<String> tempLines = new ArrayList<>(); 
+            System.out.println(tempLines);
+
+            tempLines = createFSCopy();
+            new FileWriter(FS, false).close();
+
+            // Replaces entries of matching index -> Deleting all subfiles / subfolders
+            for (int i = 0; i < tempLines.size(); i++) {
+                if (targetLines.contains(i)) {
+                    writer.println(DELETED_SYMBOL + tempLines.get(i).substring(1));
+                } else {
+                    writer.println(tempLines.get(i));
+                }
             }
-            lineCount++;
+            writer.flush();
+            writer.close();
         }
-
-        ArrayList<String> tempLines = new ArrayList<>(); 
-        PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(FS.getPath(), true)));
-
-        tempLines = createFSCopy();
-        new FileWriter(FS, false).close();
-
-        //Replaces entries of matching index
-        for(int i = 0; i < tempLines.size(); i++){
-            if(targetLines.contains(i)){
-                writer.println(DELETED_SYMBOL + tempLines.get(i).substring(1));
-            }
-            else{
-                writer.println(tempLines.get(i));
-            }
+        else{
+            System.out.println("Directory does not exist");
         }
-        writer.flush();
-        writer.close();
         System.out.println(targetLines);
     }
 
@@ -234,12 +267,13 @@ public class VSFS {
         return tempLines;
     }
 
-    public ArrayList<Integer> getTargetLineNumber(String filePath) throws IOException{
+    public ArrayList<Integer> getTargetLineIndex(String filePath) throws IOException{
         ArrayList<Integer> targetLines = new ArrayList<>();
         int lineCount = 0;
         for(String file : FSContent){
-            if(file.contains(filePath)){
-                System.out.println("Found matching entry: " + file );
+            //Makes sure not to count deleted files
+            if(file.contains(filePath) && !file.contains(String.valueOf(DELETED_SYMBOL))){
+                System.out.println("Found matching entry: " + file);
                 targetLines.add(lineCount);
             }
             lineCount++;

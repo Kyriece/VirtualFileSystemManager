@@ -1,9 +1,25 @@
 NOTES V1.0
-
 =Aids1/
 #Aids1/Aids2/
 #Aids1/Aids2/yum
-#Deez
-#Aids1/Aids2/Aids3
-=Aids1/Aids4
-@Aids1/Aids5
+@Deez
+#Aids1/Aids2/Aids3/
+#Aids1/Aids2/Aids3/yuck
+@Aids1/Aids4
+#Aids1/Aids5
+ asdas
+=internal/
+@internal/nice
+ First line
+ Second line
+ Third line
+=internal/nice/
+@internal/nice/nicer
+ First line
+ Second line
+ Third line
+=internal/nice/nicer/
+@internal/nice/nicer/nicest
+ First line
+ Second line
+ Third line
