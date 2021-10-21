@@ -18,6 +18,7 @@ import java.util.Scanner;
 public class VSFS {
 
     private File FS;
+    ArrayList<String> FSContent = new ArrayList<>();
     final char FILE_SYMBOL = '@';
     final char FOLDER_SYMBOL = '=';
     final char DELETED_SYMBOL = '#';
@@ -34,7 +35,6 @@ public class VSFS {
         FileReader reader = new FileReader(FS);
         BufferedReader bufferedReader = new BufferedReader(reader);
         String line;
-        ArrayList<String> FSContent = new ArrayList<>();
         while ((line = bufferedReader.readLine()) != null) {
             FSContent.add(line);
         }
@@ -95,14 +95,15 @@ public class VSFS {
 
                     break;
                 case ("mkdir"):
-                    //Creates file with ID inputted
+                    //Creates new directory
                     mkDir(input.get(input.size()-1));
                     break;
                 case ("rm"):
+                    //Deletes file
                     rm(input.get(input.size()-1));
                     break;
                 case ("rmdir"):
-
+                    rmDir(input.get(input.size()-1));
                     break;
                 case ("defrag"):
 
@@ -115,7 +116,6 @@ public class VSFS {
 
     public boolean VFSMcommandCheck(ArrayList<String> input){
         boolean VFSMcommand = false;
-        System.out.println(input.get(0));
         if(input.get(0).toLowerCase().equals("vsfs")){
             VFSMcommand = true;
         }
@@ -169,14 +169,14 @@ public class VSFS {
 
             //Copies all lines excluding matching filedirectory to tempLines AND gets linecount
             tempLines = createFSCopy();
-            int targetLine = getTargetLineNumber(FILE_SYMBOL + filePath);
+            ArrayList<Integer> targetLine = getTargetLineNumber(FILE_SYMBOL + filePath);
 
             //Empties file
             new FileWriter(FS, false).close();
 
             //Writes copy to new file, replacing targetLine with new symbol
             for(int i = 0; i < tempLines.size(); i++){
-                if(i == targetLine){
+                if(targetLine.contains(i)){
                     writer.println(DELETED_SYMBOL + filePath);
                 }
                 else{
@@ -186,6 +186,40 @@ public class VSFS {
         }
         writer.flush();
         writer.close();
+    }
+
+    public void rmDir(String filePath) throws IOException{
+
+        
+        //Gets the index of files that are within target filepath
+        ArrayList<Integer> targetLines = new ArrayList<>();
+        int lineCount = 0;
+        for(String file : FSContent){
+            if(file.contains(filePath)){
+                System.out.println("Found matching entry: " + file );
+                targetLines.add(lineCount);
+            }
+            lineCount++;
+        }
+
+        ArrayList<String> tempLines = new ArrayList<>(); 
+        PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(FS.getPath(), true)));
+
+        tempLines = createFSCopy();
+        new FileWriter(FS, false).close();
+
+        //Replaces entries of matching index
+        for(int i = 0; i < tempLines.size(); i++){
+            if(targetLines.contains(i)){
+                writer.println(DELETED_SYMBOL + tempLines.get(i).substring(1));
+            }
+            else{
+                writer.println(tempLines.get(i));
+            }
+        }
+        writer.flush();
+        writer.close();
+        System.out.println(targetLines);
     }
 
     public ArrayList<String> createFSCopy() throws IOException{
@@ -200,20 +234,16 @@ public class VSFS {
         return tempLines;
     }
 
-    public int getTargetLineNumber(String filePath) throws IOException{
-        FileReader reader = new FileReader(FS);
-        BufferedReader bufferedReader = new BufferedReader(reader);
-        String line;
+    public ArrayList<Integer> getTargetLineNumber(String filePath) throws IOException{
+        ArrayList<Integer> targetLines = new ArrayList<>();
         int lineCount = 0;
-        int targetLine = 0;
-
-        while ((line = bufferedReader.readLine()) != null){
-            if(line.equals(filePath)){
-                targetLine = lineCount;
+        for(String file : FSContent){
+            if(file.contains(filePath)){
+                System.out.println("Found matching entry: " + file );
+                targetLines.add(lineCount);
             }
             lineCount++;
         }
-        bufferedReader.close();
-        return targetLine;
+        return targetLines;
     }
 }
