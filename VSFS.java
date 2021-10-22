@@ -45,7 +45,6 @@ public class VSFS {
         bufferedReader.close();
         System.out.println(FSContent);
 
-
         if(FS.exists()){
             if(!FSContent.get(0).equals("NOTES V1.0")){
                 System.out.println("Invalid notes file");
@@ -56,31 +55,7 @@ public class VSFS {
         }
 
         
-        // myReader.close();
-
-
-        // myReader.close();
-        //Input commands
-        // File testFile = new File("filename.txt");
-        // try {
-        //     System.out.println(Files.getAttribute(testFile.toPath(), "unix:nlink"));
-        // } catch (IOException e1) {
-        //     e1.printStackTrace();
-        // }
-        // try {
-        //     Scanner myReader = new Scanner(testFile);
-        // } catch (FileNotFoundException e) {
-        //     e.printStackTrace();
-        // }
-        // if (testFile.exists()) {
-        //     System.out.println("File name: " + testFile.getName());
-        //     System.out.println("Absolute path: " + testFile.getAbsolutePath());
-        //     System.out.println("Writeable: " + testFile.canWrite());
-        //     System.out.println("Readable " + testFile.canRead());
-        //     System.out.println("File size in bytes " + testFile.length());
-        //   } else {
-        //     System.out.println("The file does not exist.");
-        //   }
+       
     }
 
 
@@ -116,8 +91,6 @@ public class VSFS {
                 case ("defrag"):
 
                     break;
-                case ("index"):
-                    break;
             }
         }
     }
@@ -133,9 +106,9 @@ public class VSFS {
     public void printList() throws IOException{
         for(String line : FSContent){
             // drwxr-xr-x+ 3 W8431514+ronvs W8431514+None 0 Oct 22 2020 usr/libexec/mc/extfs.d
-            // AAAAAAAAAAAAAAAAA (need to add first char)
             String fileType = line.substring(0, 1);
             if(!fileType.equals(String.valueOf(FILE_CONTENT_SYMBOL)) && !fileType.substring(0, 1).equals("N")){
+                // AAAAAAAAAAAAAAAAA (need to add first char)
                 if(fileType.equals(String.valueOf(FILE_SYMBOL))){
                     fileType = "-";
                 }
@@ -151,8 +124,8 @@ public class VSFS {
                 System.out.print(Files.getAttribute(FS.toPath(), "unix:gid") + " ");
                 // DATETIME
                 BasicFileAttributes file_att = Files.readAttributes(FS.toPath(), BasicFileAttributes.class);
-                SimpleDateFormat sd = new SimpleDateFormat("MM/dd/yyyy HH:mm");
-                System.out.printf("%s ", sd.format(file_att.creationTime().toMillis()));
+                SimpleDateFormat sd = new SimpleDateFormat("MM-dd-yyyy HH:mm");
+                System.out.print(sd.format(file_att.creationTime().toMillis()) + " ");
                 // FILE
                 System.out.print(line.substring(1));
                 System.out.println();
@@ -192,7 +165,7 @@ public class VSFS {
     }
 
     public void copyOut(String IF, String EF) throws IOException, FileNotFoundException{
-        //Create file
+        // Create file
         new FileWriter(EF, false).close();
         File newFile = new File(EF);
         // newFile.createNewFile();
