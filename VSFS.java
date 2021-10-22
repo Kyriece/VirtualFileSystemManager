@@ -6,6 +6,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.text.SimpleDateFormat;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -22,6 +25,7 @@ public class VSFS {
     final char FILE_SYMBOL = '@';
     final char FOLDER_SYMBOL = '=';
     final char DELETED_SYMBOL = '#';
+    final char FILE_CONTENT_SYMBOL = ' ';
     final int NOTES_NAME = 2;
     public void VFSM(){
     }
@@ -89,7 +93,7 @@ public class VSFS {
         if(VFSMcommandCheck(input)){
             switch(command){
                 case ("list"):
-
+                    printList();
                     break;
                 case ("copyin"):
                     copyIn(input.get(input.size()-2), input.get(input.size()-1));
@@ -124,6 +128,38 @@ public class VSFS {
             VFSMcommand = true;
         }
         return VFSMcommand;
+    }
+
+    public void printList() throws IOException{
+        for(String line : FSContent){
+            // drwxr-xr-x+ 3 W8431514+ronvs W8431514+None 0 Oct 22 2020 usr/libexec/mc/extfs.d
+            // AAAAAAAAAAAAAAAAA (need to add first char)
+            String fileType = line.substring(0, 1);
+            if(!fileType.equals(String.valueOf(FILE_CONTENT_SYMBOL)) && !fileType.substring(0, 1).equals("N")){
+                if(fileType.equals(String.valueOf(FILE_SYMBOL))){
+                    fileType = "-";
+                }
+                else{
+                    fileType = "d";
+                }
+                System.out.print(fileType + PosixFilePermissions.toString(Files.getPosixFilePermissions(FS.toPath())) + " ");
+                // NNN
+                System.out.print(1 + " ");
+                // OOOOOOOOOO
+                System.out.print(Files.getOwner(FS.toPath()) + " ");
+                // GGGGGGGGGG
+                System.out.print(Files.getAttribute(FS.toPath(), "unix:gid") + " ");
+                // DATETIME
+                BasicFileAttributes file_att = Files.readAttributes(FS.toPath(), BasicFileAttributes.class);
+                SimpleDateFormat sd = new SimpleDateFormat("MM/dd/yyyy HH:mm");
+                System.out.printf("%s ", sd.format(file_att.creationTime().toMillis()));
+                // FILE
+                System.out.print(line.substring(1));
+                System.out.println();
+            }
+            
+        }
+        
     }
 
     public void copyIn(String EF, String IF) throws IOException, FileNotFoundException{
