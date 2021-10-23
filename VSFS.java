@@ -1,11 +1,7 @@
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.text.SimpleDateFormat;
@@ -16,7 +12,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Scanner;
+
+import javax.swing.event.SwingPropertyChangeSupport;
 
 public class VSFS {
 
@@ -34,7 +31,6 @@ public class VSFS {
 
         //Load notes file
         FS = new File(args[NOTES_NAME]);
-        // Scanner myReader = new Scanner(notesFile);
 
         FileReader reader = new FileReader(FS);
         BufferedReader bufferedReader = new BufferedReader(reader);
@@ -43,28 +39,35 @@ public class VSFS {
             FSContent.add(line);
         }
         bufferedReader.close();
-        System.out.println(FSContent);
 
         if(FS.exists()){
-            if(!FSContent.get(0).equals("NOTES V1.0")){
+            if(!FSContent.get(0).equals("NOTES V1.0") || !contentRequirement()){
                 System.out.println("Invalid notes file");
             } 
             else{
                 commandTerminal(args);
             }
         }
-
-        
        
     }
 
-
+    public boolean contentRequirement(){
+        for(int i = 1; i < FSContent.size() - 1; i++){
+            int j = i+1;
+            //Checks to see if its file content
+            if(FSContent.get(j).substring(0,1).equals(String.valueOf(FILE_CONTENT_SYMBOL))){
+                //Checks to see if previous line was either file content OR a file. 
+                if(!FSContent.get(i).substring(0,1).equals(String.valueOf(FILE_SYMBOL)) && !FSContent.get(i).substring(0, 1).equals(String.valueOf(FILE_CONTENT_SYMBOL))){
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
     public void commandTerminal(String[] args) throws IOException, FileNotFoundException{
-        // Get input
         //Read command
         ArrayList<String> input = new ArrayList<String>(Arrays.asList(args));
         String command = input.get(1).toLowerCase();
-        System.out.println(command);
         if(VFSMcommandCheck(input)){
             switch(command){
                 case ("list"):
@@ -89,7 +92,7 @@ public class VSFS {
                     rmDir(input.get(input.size()-1));
                     break;
                 case ("defrag"):
-
+                    defrag();
                     break;
             }
         }
@@ -103,12 +106,42 @@ public class VSFS {
         return VFSMcommand;
     }
 
+    public void defrag() throws IOException{
+        //Gets all deleted lines index
+        ArrayList<Integer> deletedLines = getDeletedLines();
+        PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(FS.getPath(), true)));
+        //Clears file
+        new FileWriter(FS, false).close();
+        //Rewrites new file content without the deleted lines
+        for(int i = 0; i < FSContent.size(); i++){
+            if(!deletedLines.contains(i)){
+                writer.println(FSContent.get(i));
+            }
+        }
+        writer.flush();
+        writer.close();
+    }
+
+    public ArrayList<Integer> getDeletedLines(){
+        ArrayList<Integer> targetLines = new ArrayList<>();
+        int lineCount = 0;
+        for(String line : FSContent){
+            //Makes sure not to count deleted files
+            if(line.contains(String.valueOf(DELETED_SYMBOL))){
+                targetLines.add(lineCount);
+            }
+            lineCount++;
+        }
+        targetLines.addAll(getFilesLinesIndex(targetLines));
+        return targetLines;
+    }
+
     public void printList() throws IOException{
         for(String line : FSContent){
             // drwxr-xr-x+ 3 W8431514+ronvs W8431514+None 0 Oct 22 2020 usr/libexec/mc/extfs.d
             String fileType = line.substring(0, 1);
             if(!fileType.equals(String.valueOf(FILE_CONTENT_SYMBOL)) && !fileType.substring(0, 1).equals("N")){
-                // AAAAAAAAAAAAAAAAA (need to add first char)
+                // AAAAAAAAAAAAAAAAA 
                 if(fileType.equals(String.valueOf(FILE_SYMBOL))){
                     fileType = "-";
                 }
@@ -136,7 +169,6 @@ public class VSFS {
     }
 
     public void copyIn(String EF, String IF) throws IOException, FileNotFoundException{
-        // System.out.println("EF = " + EF + " IF = " + IF);
         //Deletes file if it already exist
         rm(IF);
         // Creates all necessary subdirectories
@@ -155,9 +187,9 @@ public class VSFS {
         String line;
         // Create file in FS
         writer.println(FILE_SYMBOL + IF);
-        // Appends content to file
+        // Appends content to file (truncates)
         while ((line = bufferedReader.readLine()) != null) {
-            writer.println(" " + line);
+            writer.println(" " + line.substring(0, 254));
         }
         bufferedReader.close();
         writer.flush();
@@ -176,11 +208,9 @@ public class VSFS {
         ArrayList<Integer> indexOfContent = new ArrayList<>();
         if(pathExist(FILE_SYMBOL + IF)){
             indexOfContent = getTargetLineIndex(IF);
-            System.out.println("ENTERING LOOP");
             for(int i = 1; i < indexOfContent.size(); i++){
                 writer.println(FSContent.get(indexOfContent.get(i)).substring(1));
             }
-            System.out.println("EXITING LOOP");
         }
         writer.flush();
         writer.close();
@@ -219,7 +249,6 @@ public class VSFS {
             }
         }
         reader.close();
-        // System.out.println("PATH " + path + " EXISTANCE = " + existance);
         return existance;
     }
 
@@ -231,7 +260,7 @@ public class VSFS {
         if(pathExist(FILE_SYMBOL + filePath)){
 
             //Copies all lines excluding matching filedirectory to tempLines AND gets linecount
-            tempLines = createFSCopy();
+            tempLines = FSContent;
             ArrayList<Integer> targetLine = getTargetLineIndex(FILE_SYMBOL + filePath);
 
             //Empties file
@@ -264,9 +293,8 @@ public class VSFS {
             targetLines = getTargetLineIndex(filePath);
             PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(FS.getPath(), true)));
             ArrayList<String> tempLines = new ArrayList<>(); 
-            System.out.println(tempLines);
 
-            tempLines = createFSCopy();
+            tempLines = FSContent;
             new FileWriter(FS, false).close();
 
             // Replaces entries of matching index -> Deleting all subfiles / subfolders
@@ -283,19 +311,6 @@ public class VSFS {
         else{
             System.out.println("Directory does not exist");
         }
-        System.out.println(targetLines);
-    }
-
-    public ArrayList<String> createFSCopy() throws IOException{
-        ArrayList<String> tempLines = new ArrayList<>(); 
-        FileReader reader = new FileReader(FS);
-        BufferedReader bufferedReader = new BufferedReader(reader);
-        String line;
-            while ((line = bufferedReader.readLine()) != null){
-                tempLines.add(line);
-            }
-        bufferedReader.close();
-        return tempLines;
     }
 
     public ArrayList<Integer> getTargetLineIndex(String filePath) throws IOException{
@@ -309,7 +324,6 @@ public class VSFS {
             lineCount++;
         }
         targetLines.addAll(getFilesLinesIndex(targetLines));
-        System.out.println(targetLines);
         return targetLines;
     }
 
@@ -322,8 +336,6 @@ public class VSFS {
             fileContentIndex = fileIndex;
             fileContentIndex++;
             while(fileContentIndex < FSContent.size() && FSContent.get(fileContentIndex).substring(0, 1).equals(" ")){
-                System.out.println(FSContent.get(fileContentIndex));
-                // System.out.println("ADDING TO FILE CONTENT = " + fileContentIndex);
                 fileContent.add(fileContentIndex);
                 fileContentIndex++;
             }
