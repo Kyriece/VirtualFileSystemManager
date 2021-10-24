@@ -38,11 +38,17 @@ public class VSFS {
         while ((line = bufferedReader.readLine()) != null) {
             FSContent.add(line);
         }
+        if(FSContent.size() == 1){
+            PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(FS.getPath(), true)));
+            writer.println();
+            writer.flush();
+            writer.close();
+        }
         bufferedReader.close();
 
         if(FS.exists()){
             if(!FSContent.get(0).equals("NOTES V1.0") || !contentRequirement()){
-                System.out.println("Invalid notes file");
+                System.err.println("Invalid notes file");
             } 
             else{
                 commandTerminal(args);
@@ -118,6 +124,7 @@ public class VSFS {
                 writer.println(FSContent.get(i));
             }
         }
+        System.out.println("Defragment completed!");
         writer.flush();
         writer.close();
     }
@@ -140,41 +147,43 @@ public class VSFS {
         for(String line : FSContent){
             // drwxr-xr-x+ 3 W8431514+ronvs W8431514+None 0 Oct 22 2020 usr/libexec/mc/extfs.d
             String fileType = line.substring(0, 1);
-            if(!fileType.equals(String.valueOf(FILE_CONTENT_SYMBOL)) && !fileType.substring(0, 1).equals("N")){
-                // AAAAAAAAAAAAAAAAA 
-                if(fileType.equals(String.valueOf(FILE_SYMBOL))){
-                    fileType = "-";
+            if(!fileType.equals(String.valueOf(DELETED_SYMBOL))){
+                if(!fileType.equals(String.valueOf(FILE_CONTENT_SYMBOL)) && !fileType.substring(0, 1).equals("N")){
+                    // AAAAAAAAAAAAAAAAA 
+                    if(fileType.equals(String.valueOf(FILE_SYMBOL))){
+                        fileType = "-";
+                    }
+                    else{
+                        fileType = "d";
+                    }
+                    System.out.print(fileType + PosixFilePermissions.toString(Files.getPosixFilePermissions(FS.toPath())) + " ");
+                    // NNN
+                    System.out.print(1 + " ");
+                    // OOOOOOOOOO
+                    System.out.print(Files.getOwner(FS.toPath()) + " ");
+                    // GGGGGGGGGG
+                    System.out.print(Files.getAttribute(FS.toPath(), "unix:gid") + " ");
+                    // DATETIME
+                    BasicFileAttributes file_att = Files.readAttributes(FS.toPath(), BasicFileAttributes.class);
+                    SimpleDateFormat sd = new SimpleDateFormat("MM-dd-yyyy HH:mm");
+                    System.out.print(sd.format(file_att.creationTime().toMillis()) + " ");
+                    // FILE
+                    System.out.print(line.substring(1));
+                    System.out.println();
                 }
-                else{
-                    fileType = "d";
-                }
-                System.out.print(fileType + PosixFilePermissions.toString(Files.getPosixFilePermissions(FS.toPath())) + " ");
-                // NNN
-                System.out.print(1 + " ");
-                // OOOOOOOOOO
-                System.out.print(Files.getOwner(FS.toPath()) + " ");
-                // GGGGGGGGGG
-                System.out.print(Files.getAttribute(FS.toPath(), "unix:gid") + " ");
-                // DATETIME
-                BasicFileAttributes file_att = Files.readAttributes(FS.toPath(), BasicFileAttributes.class);
-                SimpleDateFormat sd = new SimpleDateFormat("MM-dd-yyyy HH:mm");
-                System.out.print(sd.format(file_att.creationTime().toMillis()) + " ");
-                // FILE
-                System.out.print(line.substring(1));
-                System.out.println();
             }
             
         }
         
     }
 
-    public void copyIn(String EF, String IF) throws IOException, FileNotFoundException{
+    public void copyIn(String EF, String IF) throws IOException{
         //Deletes file if it already exist
         rm(IF);
         // Creates all necessary subdirectories
         ArrayList<String> IFSplit = new ArrayList<String>(Arrays.asList(IF.split("/")));
         String path = "";
-        for (int i = 0; i < (IFSplit.size() - 1); i++) {
+        for (int i = 0; i < (IFSplit.size()-1); i++) {
             path += IFSplit.get(i) + "/";
         }
         mkDir(path);
@@ -189,14 +198,19 @@ public class VSFS {
         writer.println(FILE_SYMBOL + IF);
         // Appends content to file (truncates)
         while ((line = bufferedReader.readLine()) != null) {
-            writer.println(" " + line.substring(0, 254));
+            if(line.length() > 254){
+                writer.println(" " + line.substring(0, 254));
+            }
+            else{
+                writer.println(" " + line);
+            }
         }
         bufferedReader.close();
         writer.flush();
         writer.close();
     }
 
-    public void copyOut(String IF, String EF) throws IOException, FileNotFoundException{
+    public void copyOut(String IF, String EF) throws IOException{
         // Create file
         new FileWriter(EF, false).close();
         File newFile = new File(EF);
@@ -214,6 +228,7 @@ public class VSFS {
         }
         writer.flush();
         writer.close();
+        System.out.println("File created in external system");
     }
 
     public void mkDir(String directoryName) throws IOException {
@@ -231,6 +246,7 @@ public class VSFS {
             // Creates directory
             if(!pathExist(FOLDER_SYMBOL + path)){
                 writer.println(FOLDER_SYMBOL+ path);
+                System.out.println("File path created: " + path);
             }
         }
         writer.flush();
@@ -269,15 +285,13 @@ public class VSFS {
             //Writes copy to new file, replacing targetLine with new symbol
             for(int i = 0; i < tempLines.size(); i++){
                 if(targetLine.contains(i)){
+                    System.out.println("Deleted file: " + tempLines.get(i));
                     writer.println(DELETED_SYMBOL + tempLines.get(i).substring(1));
                 }
                 else{
                     writer.println(tempLines.get(i));
                 }
             }
-        }
-        else{
-            System.out.println("File does not exist");
         }
         writer.flush();
         writer.close();
@@ -300,6 +314,7 @@ public class VSFS {
             // Replaces entries of matching index -> Deleting all subfiles / subfolders
             for (int i = 0; i < tempLines.size(); i++) {
                 if (targetLines.contains(i)) {
+                    System.out.println("Deleted Directory: " + tempLines.get(i));
                     writer.println(DELETED_SYMBOL + tempLines.get(i).substring(1));
                 } else {
                     writer.println(tempLines.get(i));
@@ -309,7 +324,7 @@ public class VSFS {
             writer.close();
         }
         else{
-            System.out.println("Directory does not exist");
+            System.err.println("Directory does not exist");
         }
     }
 
@@ -328,7 +343,6 @@ public class VSFS {
     }
 
     public ArrayList<Integer> getFilesLinesIndex(ArrayList<Integer> indexOfFiles){
-        // System.out.println("GetFilesLinesIndex");
         int fileContentIndex = 0;
         ArrayList<Integer> fileContent = new ArrayList<>();
         //Checks all deleted index's, and if they're followed by 'filecontent' then it adds them to the list 
@@ -340,7 +354,6 @@ public class VSFS {
                 fileContentIndex++;
             }
         }
-        // System.out.println("FILE CONTENT = " + fileContent);
         return fileContent;
     }
 }
